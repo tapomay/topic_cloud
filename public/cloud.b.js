@@ -1,5 +1,5 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.driver = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-function cloudify() {
+function cloudify(wrdWeightMap) {
 
   var d3 = require("d3");
   var cloud = require(".");
@@ -8,12 +8,37 @@ function cloudify() {
 
   var layout = cloud();
   layout.size([500, 500])
-  var wrdList = ["Hello", "world", "normally", "you", "want", "more", "words", "than", "this"];
-  function wrdSort(d) {
-      return {text: d, size: 10 + Math.random() * 90};
-  }
-  var words = wrdList.map(wrdSort);
+  // var wrdList = ["Hello", "world", "normally", "you", "want", "more", "words", "than", "this"];
+  // var wrdList = arr;
+  
+  // function wrdSort(d) {
+  //     return {text: d, size: 10 + Math.random() * 90};
+  // }
+  // wrdList.map(wrdSort);
 
+  // var words = [];
+  // console.log("R2D2: " + wrdWeightMap)
+
+  // for (var wrdStr in wrdWeightMap) {
+  //   console.log("K:" + wrdStr);
+  //   console.log("V: " + wrdWeightMap[wrdStr]);
+  //   var wrdObj = {text: wrdStr, size: 10 + wrdWeightMap[wrdStr] * 90};
+  //   words.push(wrdObj);
+  // }
+
+  //TEMP...
+// var getR = function() {return 10 + Math.random() * 90};
+// var getS = function() {
+//   var obj = {"amazing":getR(),"brilliant":getR(),"extravagant":getR()};
+//   var ret = JSON.stringify(obj);
+//   return obj;
+// }
+  // wrdWeightMap = getS();
+  //...TEMP
+  var words = Object.keys(wrdWeightMap).map((wrdStr) => {return {text: wrdStr, size: 10 + wrdWeightMap[wrdStr] * 90}});
+  console.log("CLOUD: " + JSON.stringify(Object.keys(wrdWeightMap)));
+  console.log("CLOUD: " + JSON.stringify(wrdWeightMap['amazing']));
+  
   layout.words(words);
   layout.padding(5);
   layout.rotate(function() { return ~~(Math.random() * 2) * 90; });
@@ -24,7 +49,8 @@ function cloudify() {
   layout.start();
 
   function draw(words) {
-    d3.select("body").append("svg")
+    d3.select("svg").remove();
+    d3.select("#server-cloud").append("svg")
         .attr("width", layout.size()[0])
         .attr("height", layout.size()[1])
       .append("g")

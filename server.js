@@ -30,10 +30,10 @@ var metaTopic = argv.metaTopic || 'meta';
 var topics = [{topic: dataTopic}, {topic: metaTopic}];
 
 // INIT KAFKA
-var client = new Client(zk);
-var options = { autoCommit: true, fromBeginning: fromBeginning, fetchMaxWaitMs: 1000, fetchMaxBytes: 1024*1024 };
-var consumer = new HighLevelConsumer(client, topics, options);
-var offset = new Offset(client);
+// var client = new Client(zk);
+// var options = { autoCommit: true, fromBeginning: fromBeginning, fetchMaxWaitMs: 1000, fetchMaxBytes: 1024*1024 };
+// var consumer = new HighLevelConsumer(client, topics, options);
+// var offset = new Offset(client);
 
 const path = require('path');
 const INDEX = path.join(__dirname, 'index.html');
@@ -45,40 +45,47 @@ server.listen(port, () => console.log(`Listening on ${ port }`));
 
 const io = require('socket.io')(server);
 // KAFKA CONSUMER
-consumer.on('message', function (message) {
-    if(verbose){
-      console.log(this.id, message);
-    }else{
-      //console.log(message.topic);
-    }
-    try{
-      var msg = message.value;
-      // try{
-      //   msg = JSON.parse(message.value);
-      // }catch(e){
-      //    //ok it's not json
-      // }
-      io.emit(message.topic, msg);
-    }catch(err){
-      console.log('error', err);
-    }
-});
+// consumer.on('message', function (message) {
+//     if(verbose){
+//       console.log(this.id, message);
+//     }else{
+//       //console.log(message.topic);
+//     }
+//     try{
+//       var msg = message.value;
+//       try{
+//         msg = JSON.parse(message.value);
+//       }catch(e){
+//          //ok it's not json
+//       }
+//       io.emit(message.topic, msg);
+//     }catch(err){
+//       console.log('error', err);
+//     }
+// });
 
-consumer.on('error', function (err) {
-    console.log('error', err);
-});
+// consumer.on('error', function (err) {
+//     console.log('error', err);
+// });
 
-consumer.on('offsetOutOfRange', function (topic) {
-    topic.maxNum = 2;
-    offset.fetch([topic], function (err, offsets) {
-        var min = Math.min.apply(null, offsets[topic.topic][topic.partition]);
-        consumer.setOffset(topic.topic, topic.partition, min);
-    });
-});
+// consumer.on('offsetOutOfRange', function (topic) {
+//     topic.maxNum = 2;
+//     offset.fetch([topic], function (err, offsets) {
+//         var min = Math.min.apply(null, offsets[topic.topic][topic.partition]);
+//         consumer.setOffset(topic.topic, topic.partition, min);
+//     });
+// });
 
+// SOCKETIO INIT
 io.on('connection', (socket) => {
   console.log('Client connected');
   socket.on('disconnect', () => console.log('Client disconnected'));
 });
-
+// var getR = function() {return 10 + Math.random() * 90};
+var getR = function() {return Math.random()};
+var getO = function() {
+  var obj = {"amazing":getR(),"brilliant":getR(),"extravagant":getR(),"marvellous":getR()};
+  return obj;
+}
+setInterval(() => io.emit('data', getO()), 5000);
 // setInterval(() => io.emit('time', new Date().toTimeString()), 1000);

@@ -11,22 +11,24 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="cloud.b.js"></script>
+    <script type="text/javascript">
+        driver.cloudify(["test", "this"]);
+    </script>
+
     <script>
       var socket = io();
       var el = document.getElementById('server-cloud');
 
-      socket.on('time', function(timeString) {
+      socket.on('meta', function(timeString) {
         el.innerHTML = 'Server time: ' + timeString;
       });
-      socket.on('data', function(dataString) {
-        el.innerHTML = 'Server data: ' + dataString;
+      socket.on('data', function(dataJsonObj) {
+        console.log("HTML: " + JSON.stringify(dataJsonObj))
+        el.innerHTML = 'Server data: ' + JSON.stringify(dataJsonObj);
+        driver.cloudify(dataJsonObj);
       });
     </script>
 
-    <script src="cloud.b.js"></script>
-    <script type="text/javascript">
-        console.log(driver.cloudify);
-        driver.cloudify();
-    </script>
   </body>
 </html>
