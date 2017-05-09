@@ -1,13 +1,21 @@
 <html>
   <body>
-    <p id='server-time'></p>
+    <div id='server-cloud'>
+      
+
+    </div>
+    
+
     <script src="/socket.io/socket.io.js"></script>
     <script>
       var socket = io();
-      var el = document.getElementById('server-time');
+      var el = document.getElementById('server-cloud');
 
       socket.on('time', function(timeString) {
         el.innerHTML = 'Server time: ' + timeString;
+      });
+      socket.on('data', function(dataString) {
+        el.innerHTML = 'Server data: ' + dataString;
       });
     </script>
   </body>

@@ -1,0 +1,11 @@
+bin/kafka-console-producer.sh --broker-list localhost:9092 --topic prices
+bin/kafka-console-consumer.sh --zookeeper localhost:5181 --topic prices --from-beginning
+tailf /tmp/kafka.out
+bin/kafka-topics.sh --zookeeper localhost:5181 --describe --topic prices
+bin/kafka-server-start.sh config/server.properties > /tmp/kafka.out 2>&1 &
+jobs
+bin/kafka-topics.sh --zookeeper localhost:5181 --delete --topic prices
+bin/kafka-topics.sh --create --zookeeper localhost:5181 --replication-factor 1 --partitions 1 --topic prices
+bin/kafka-topics.sh --zookeeper localhost:5181 --list
+java -cp "dependencies/lib/*:." Lab2.StockConsumer localhost:9092 stats2 aapl mygroup 0.01
+java -cp "dependencies/lib/*:." Lab2.StockProducer localhost:9092 data/table-rev.csv aapl prices2 1000
