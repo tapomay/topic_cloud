@@ -1,7 +1,8 @@
 'use strict';
 
 const express = require('express');
-const socketIO = require('socket.io');
+var app = express();
+var server = require('http').Server(app);
 
 const kafka = require('kafka-node');
 const HighLevelConsumer = kafka.HighLevelConsumer;
@@ -34,16 +35,15 @@ var options = { autoCommit: true, fromBeginning: fromBeginning, fetchMaxWaitMs: 
 var consumer = new HighLevelConsumer(client, topics, options);
 var offset = new Offset(client);
 
-// INIT SERVER AND SOCKETIO
 const path = require('path');
 const INDEX = path.join(__dirname, 'index.html');
 
-const server = express()
-  .use((req, res) => res.sendFile(INDEX) )
-  .listen(port, () => console.log(`Listening on ${ port }`));
+// var server = express()
+app.use("/", express.static('public'));
+app.use((req, res) => res.sendFile(INDEX) )
+server.listen(port, () => console.log(`Listening on ${ port }`));
 
 const io = require('socket.io')(server);
-
 // KAFKA CONSUMER
 consumer.on('message', function (message) {
     if(verbose){

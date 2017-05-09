@@ -8,7 +8,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
-    "build": "mkdir -p build && browserify --standalone d3.layout.cloud.driver index.js > build/d3.layout.cloud.driver.js"
+    "build": "mkdir -p public && node_modules/.bin/browserify --standalone driver cloud.driver.js > public/cloud.b.js"
   },
   "keywords": [
     "word",
@@ -26,6 +26,7 @@
     "express": "latest",
     "socket.io": "latest",
     "d3-dispatch": "1",
+    "d3": "latest",
     "http": "^0.0.0",
     "kafka-node": "^0.2.21",
     "monitor.io": "^0.1.0",
