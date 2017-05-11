@@ -213,7 +213,7 @@ public class BasicSparkApp {
 		});
 
 		for (Tuple2<int[], double[]> topicDescription : describeTopics) {
-			System.out.print("Topic " + topic + ":");
+			System.out.print("\nTopic " + topic + ":");
 			int[] tokenIndices = topicDescription._1();
 			double[] tokenWeights = topicDescription._2();
 			for (int i = 0; i < tokenWeights.length; i++) {
