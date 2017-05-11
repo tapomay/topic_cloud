@@ -8,7 +8,9 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.regex.Pattern;
@@ -17,6 +19,8 @@ import java.util.stream.Collectors;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -27,6 +31,10 @@ import org.apache.spark.mllib.clustering.LDAModel;
 import org.apache.spark.mllib.linalg.Matrix;
 import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.linalg.Vectors;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import scala.Tuple2;
 
@@ -43,7 +51,9 @@ public class TopicCloudSparkAppMod {
 	private static final int TOPIC_COUNT = 10;
 
 	private static Integer currentFileIndex = 1;
-
+	private static final ObjectMapper mapper = new ObjectMapper();
+	private static final int TOKEN_LIMIT = 10;
+	
 	public static KafkaConsumer<String, String> configureConsumer(String brokerSocket, String groupId) {
 		Properties props = new Properties();
 		props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
@@ -55,16 +65,31 @@ public class TopicCloudSparkAppMod {
 		return consumer;
 	}
 
+	public static KafkaProducer<String, JsonNode> configureProducer(String brokerSocket) {
+        Properties props = new Properties();
+        props.put("value.serializer", "org.apache.kafka.connect.json.JsonSerializer");
+        props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+        props.put("bootstrap.servers", brokerSocket);
+        KafkaProducer<String, JsonNode> producer = new KafkaProducer<String, JsonNode>(props);
+        return producer;
+    }
+
 	public static void main(String[] args) throws Exception {
 
 		String brokerSocket = "localhost:9092";
 		String inputTopic = "docs";
 		String groupId = "mycg";
-		long pollTimeOut = 1000;
+		long pollTimeOut = 1000l;
+        String outputTopic = "tcdata";
 
 		KafkaConsumer<String, String> kafkaConsumer = configureConsumer(brokerSocket, groupId);
 		kafkaConsumer.subscribe(Arrays.asList(inputTopic));
-		
+        long sleepTime = 1000l;
+        
+        
+        // configure the producer
+        KafkaProducer<String,JsonNode> kafkaProducer = configureProducer(brokerSocket);
+        
 		while (true) {
 			ConsumerRecords<String, String> records = kafkaConsumer.poll(pollTimeOut);
 			int recordCount = 0;
@@ -78,7 +103,8 @@ public class TopicCloudSparkAppMod {
 				for (String content : contentArr) {
 					writeToFileIndex(currentFileIndex++, content);
 				}
-				testLDAStr("data/*.txt");
+				Map<String, Double> scores = testLDAStr("data/*.txt");
+				publish(scores, kafkaProducer, outputTopic);
 			}
 		}
 		
@@ -87,6 +113,19 @@ public class TopicCloudSparkAppMod {
 		// app.wordCount("problem.txt");
 		// app.testLDANum("sample_lda_data.txt");
 		// app.testLDAStr("problem.txt");
+	}
+
+	private static void publish(Map<String, Double> scores, KafkaProducer<String,JsonNode> kafkaProducer, String outputTopic) {
+		ObjectNode objectNode = mapper.createObjectNode();
+		Set<Entry<String,Double>> entrySet = scores.entrySet();
+		for (Entry<String, Double> entry : entrySet) {
+			String token = entry.getKey();
+			Double score = entry.getValue();
+			objectNode.put(token, score);
+		}
+		ProducerRecord<String, JsonNode> rec = new ProducerRecord<String, JsonNode>(outputTopic, objectNode);
+		kafkaProducer.send(rec);
+		System.out.println("Sent message  " + rec);		
 	}
 
 	private static void writeToFileIndex(Integer index, String content) throws FileNotFoundException {
@@ -98,7 +137,7 @@ public class TopicCloudSparkAppMod {
 	}
 
 
-	public static void testLDAStr(String filepath) throws Exception {
+	public static Map<String, Double> testLDAStr(String filepath) throws Exception {
 		/**
 		 * https://gist.github.com/jkbradley/ab8ae22a8282b2c8ce33
 		 * 
@@ -203,6 +242,8 @@ public class TopicCloudSparkAppMod {
 			}
 		});
 
+
+		Map<String, Double> tokenScores = new HashMap<>();
 		for (Tuple2<int[], double[]> topicDescription : describeTopics) {
 			System.out.print("\nTopic " + topic + ":");
 			int[] tokenIndices = topicDescription._1();
@@ -210,21 +251,28 @@ public class TopicCloudSparkAppMod {
 			for (int i = 0; i < tokenWeights.length; i++) {
 				System.out.print(String.format("\n%d: %s : %f", tokenIndices[i], revVocabIndex.get(tokenIndices[i]),
 						tokenWeights[i]));
+				tokenScores.put(revVocabIndex.get(tokenIndices[i]), tokenWeights[i]);
 			}
 			topic++;
+		}
+		Comparator<? super Entry<String, Double>> comparator = new Comparator<Entry<String, Double>>() {
+
+			@Override
+			public int compare(Entry<String, Double> o1, Entry<String, Double> o2) {
+				return o2.getValue().intValue() - o1.getValue().intValue();
+			}
+		};
+		
+		List<Entry<String, Double>> sorted = tokenScores.entrySet().stream().sorted(comparator).collect(Collectors.toList());
+		Map<String, Double> ret = new HashMap<>();
+		for (int i = 0; i < TOKEN_LIMIT && i < sorted.size(); i++) {
+			Entry<String, Double> entry = sorted.get(i);
+			ret.put(entry.getKey(), entry.getValue());
 		}
 		// Output topics. Each is a distribution over words (matching word count
 		// vectors)
 
-		System.out.println("Learned topics (as distributions over vocab of " + ldaModel.vocabSize() + " words):");
-		Matrix topics = ldaModel.topicsMatrix();
-		for (topic = 0; topic < 3; topic++) {
-			System.out.print("Topic " + topic + ":");
-			for (int word = 0; word < ldaModel.vocabSize(); word++) {
-				System.out.print(" " + topics.apply(word, topic));
-			}
-			System.out.println();
-		}
 		jsc.close();
+		return ret;
 	}
 }
