@@ -34,9 +34,9 @@ function cloudify(wrdWeightMap) {
 // }
   // wrdWeightMap = getS();
   //...TEMP
-  var words = Object.keys(wrdWeightMap).map((wrdStr) => {return {text: wrdStr, size: 10 + wrdWeightMap[wrdStr] * 90}});
-  console.log("CLOUD: " + JSON.stringify(Object.keys(wrdWeightMap)));
-  console.log("CLOUD: " + JSON.stringify(wrdWeightMap['amazing']));
+  var words = Object.keys(wrdWeightMap).map((wrdStr) => {return {text: wrdStr, size: 10 + wrdWeightMap[wrdStr] * 1000}});
+  console.log("CLOUD: " + JSON.stringify(words));
+  // console.log("CLOUD: " + JSON.stringify(wrdWeightMap['amazing']));
   
   layout.words(words);
   layout.padding(5);
@@ -66,6 +66,7 @@ function cloudify(wrdWeightMap) {
         })
         .text(function(d) { return d.text; });
   }
+  return words;
 };
 
 module.exports.cloudify = cloudify;

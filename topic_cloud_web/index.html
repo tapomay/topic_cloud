@@ -20,10 +20,10 @@
       var socket = io();
       var el = document.getElementById('server-cloud');
 
-      socket.on('meta', function(timeString) {
-        el.innerHTML = 'Server time: ' + timeString;
-      });
-      socket.on('data', function(dataJsonObj) {
+      // socket.on('meta', function(timeString) {
+      //   el.innerHTML = 'Server time: ' + timeString;
+      // });
+      socket.on('tcdata', function(dataJsonObj) {
         console.log("HTML: " + JSON.stringify(dataJsonObj))
         el.innerHTML = 'Server data: ' + JSON.stringify(dataJsonObj);
         driver.cloudify(dataJsonObj);
